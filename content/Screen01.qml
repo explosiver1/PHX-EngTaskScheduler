@@ -15,16 +15,13 @@ Rectangle {
     width: 400
     height: 600
     color: "#cfcfcf"
-    property bool isNotifyBoxVisible: false
-    property string notifyTextString: "Testing, testing"
+    property bool isNotifyBoxVisible: true
+    property string notifyTextString: "Initialization"
     property string currentJob: ""
     property string currentPhase: ""
     property string currentTask: ""
     property bool currentCompletion: false
-    property string previousJob: ""
-    property string previousPhase: ""
-    property string previousTask: ""
-    property bool previousCompletion: false
+
 
 
     Rectangle {
@@ -95,9 +92,6 @@ Rectangle {
                 //This will be used in the chain of notification boxes.
                 //The delay between responding to notification screens should be immensely slower than User Input, so this should be fine.
                 Component.onCompleted: {
-                    rectangle.previousJob = currentJob
-                    rectangle.previousPhase = currentPhase
-                    rectangle.previousTask = currentTask
                     rectangle.currentJob = model.job
                     rectangle.currentPhase = model.phase
                     rectangle.currentTask = model.name
@@ -117,29 +111,47 @@ Rectangle {
         anchors.rightMargin: 20
         visible: rectangle.isNotifyBoxVisible
 
-        property int notificationState: 3;
+        property int notificationState: 0;
+        property bool isInputTextVisible: false;
 
         Text {
             id: notifyText
-            x: 170
             height: 50
             text: rectangle.notifyTextString
-            anchors.verticalCenter: parent.verticalCenter
+            anchors.top: parent.top
             anchors.left: parent.left
             anchors.right: parent.right
             anchors.leftMargin: 50
             anchors.rightMargin: 50
+            anchors.topMargin: 10
             font.pixelSize: 12
             horizontalAlignment: Text.AlignHCenter
             verticalAlignment: Text.AlignVCenter
         }//Text
 
+        TextEdit {
+            id: inputText
+            anchors.top: notifyText.bottom
+            anchors.left: parent.left
+            anchors.right: parent.right
+            anchors.rightMargin: 10
+            anchors.leftMargin: 10
+            anchors.topMargin: 10
+            text: ""
+            visible: notifyBox.isInputTextVisible
+        }
+
         Button {
             id: okButton
-            x: 122
-            y: 145
-            width: 93
-            height: 47
+            //x: 122
+            //y: 145
+            //width: 93
+            anchors.bottom: parent.bottom
+            anchors.left: parent.left
+            anchors.right: parent.right
+            anchors.leftMargin: 80
+            anchors.rightMargin: 80
+            height: 50
             text: qsTr("OK")
 
             Connections {
@@ -148,9 +160,26 @@ Rectangle {
                     //Strip out all the references to UI properties here when setting the text.
                     //Access the properties through C++ functions to get reliable data.
                     //The asynchronous execution of signals is causing problems here.
+                    var str
                     var cj = tsmodel.getCurrentJob()
                     var ct = tsmodel.getCurrentTask()
                     switch (notifyBox.notificationState) {
+                    case 0:
+                        str = tsmodel.getInitJobPath();
+                        if (tsmodel.changeJob(str)){
+                            if(tsmodel.getIsJobComplete(0)) {
+                                notifyBox.notificationState =  4;
+                                rectangle.notifyTextString = "Job: " + cj + " Complete"
+                            } else {
+                                notifyBox.notificationState = 3;
+                                rectangle.isNotifyBoxVisible = false;
+                            }
+                        } else {
+                            notifyBox.notificationState = 7
+                            rectangle.notifyTextString = "No User Data Found"
+                        }
+
+                        break;
                     case 1:
                         if(tsmodel.getIsJobComplete(0)) {
                             notifyBox.notificationState =  4;
@@ -168,27 +197,39 @@ Rectangle {
                         console.log("How did you accomplish this?")
                         break;
                     case 4:
+                    case 7:
                         rectangle.notifyTextString = "Enter a new job #"
                         //Make text field visible
                         notifyBox.notificationState = 5
+                        notifyBox.isInputTextVisible = true;
                         break;
                     case 5:
-                        //Check if new changeJob() goes through. Probably going to have an async problem here since I access data between the change and some property bindings.
-                        if (tsmodel.changeJob()) {
-                            rectangle.notifyTextString = "Starting Task: " + ct
+                        let re = /\d{2}-\d{4}/
+                        str = inputText.text
+                        if (!re.test(str)) {
+                            rectangle.notifyTextString = "Invalid input, please follow the job number format ##-####"
+                            break;
+                        }
+                        if (tsmodel.changeJob(str)) {
+                            tsmodel.changeTask()
+                            rectangle.notifyTextString = "Starting Task: " + tsmodel.getCurrentTask()
                             notifyBox.notificationState = 2
                         } else {
-                            rectangle.notifyTextString = "Job # Invalid,\nTry Again"
+                            rectangle.notifyTextString = "Job # Invalid,\nMaking Job..."
+                            tsmodel.createJob(str)
+                            tsmodel.changeJob(str)
+                            tsmodel.changeTask()
                             notifyBox.notificationState = 6
                         }
+                        inputText.text = ""
+                        notifyBox.isInputTextVisible = false
                         break;
-                    case 6: //I think I can condense state 4 and 5. I just enter the same state with a different notifyTextString.
-                        rectangle.notifyTextString = "Enter a new job #"
-                        //Make text field visible
-                        notifyBox.notificationState=5
+                    case 6:
+                        notifyBox.notificationState=2
+                        rectangle.notifyTextString = "Starting Task: " + tsmodel.getCurrentTask()
                         break;
-                    }
-                }
+                    }//switch
+                }//onClicked
             }//Connections
         }//Button
     }//Rectangle
@@ -224,7 +265,7 @@ Rectangle {
                         rectangle.isNotifyBoxVisible = true
                         notifyBox.notificationState = 2
                         rectangle.notifyTextString = "Starting Task: " + tsmodel.getCurrentTask()
-                    }
+                    }//onClicked
                 }//Connections
             }//Button
 
@@ -240,7 +281,7 @@ Rectangle {
                         rectangle.isNotifyBoxVisible = true;
                         tsmodel.completeTask();
                         tsmodel.changeTask();
-                    }
+                    }//onClicked
                 }//Connections
             }//Button
         }//RowLayout

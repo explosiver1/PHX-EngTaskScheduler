@@ -5,6 +5,7 @@
 #include <qqml.h>
 #include "task.h"
 #include <QFile>
+#include <QStandardPaths>
 
 #include <random>
 
@@ -34,10 +35,13 @@ public:
     int columnCount(const QModelIndex &parent) const override;
     Q_INVOKABLE void doSomething();
     Q_INVOKABLE bool getIsJobComplete(int n);
-    Q_INVOKABLE bool changeJob();
+    Q_INVOKABLE bool changeJob(QString s);
     Q_INVOKABLE QString getCurrentJob();
     Q_INVOKABLE QString getCurrentTask();
-
+    Q_INVOKABLE bool createJob(QString s);
+    Q_INVOKABLE QString getInitJobPath();
+    Q_INVOKABLE QString getJobFolderPath();
+    Q_INVOKABLE bool saveJob();
 
 public slots:
     Q_INVOKABLE void completeTask();
@@ -57,10 +61,9 @@ private:
     void PrintTaskVector();
     void PrintTask(Task t);
     bool isJobComplete = false;
-    //bool isPreviousJobComplete = true;
-
-
-    // QAbstractItemModel interface
+    const QString jobFolderPath = "V:/TaskScheduler/";
+    QString initJobPath = "";
+    QString jobTemplatePath = jobFolderPath + "Template.csv";
 
     // QAbstractItemModel interface
 public:
