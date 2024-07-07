@@ -61,7 +61,9 @@ private:
     void PrintTaskVector();
     void PrintTask(Task t);
     bool isJobComplete = false;
-    const QString jobFolderPath = "V:/TaskScheduler/";
+    const QString linuxJobFolderPath = "/mnt/mvdata/TaskScheduler/";
+    const QString winJobFolderPath = "V:/TaskScheduler";
+    QString jobFolderPath;
     QString initJobPath = "";
     QString jobTemplatePath = jobFolderPath + "Template.csv";
 

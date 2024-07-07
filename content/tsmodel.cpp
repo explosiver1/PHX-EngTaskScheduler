@@ -2,6 +2,12 @@
 
 TSModel::TSModel(QAbstractListModel *parent): QAbstractListModel{parent}
 {
+    //checks the environment and sets drive path accordingly.
+    if (true) {
+        jobFolderPath = winJobFolderPath;
+    } else {
+        jobFolderPath = linuxJobFolderPath;
+    }
     //This snippet opens the Docouments folder on Windows.
     //QStandardPaths::writableLocation(QStandardPaths::DocumentsLocation);
     QFile f = QFile(QStandardPaths::writableLocation(QStandardPaths::DocumentsLocation) + "ETS.txt");
@@ -302,7 +308,9 @@ void TSModel::changeTask()
             std::random_device rd;
             std::mt19937 gen(rd());
             std::uniform_int_distribution<int> distrib(phaseStartIndex, phaseEndIndex);
+	    qDebug() << "Finding random number between " + QString::number(phaseStartIndex) + " and " + QString::number(phaseEndIndex);
             currentTaskIndex = distrib(gen);
+	    qDebug() << "Found " + QString::number(currentTaskIndex);
         }
         //setData is the method QML is looking for when reacting to dataChanged(). Not sure if it's necessary, but I'll stick with the convention. dataChanged() is 100% needed.
         setData(index(0,0), task_list[currentTaskIndex].job, TaskJobRole);
